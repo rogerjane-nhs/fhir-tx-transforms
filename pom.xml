@@ -33,12 +33,13 @@
 		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<hapi.version>4.1.0</hapi.version>
+		<jersey.version>2.25.1</jersey.version>
 	</properties>
-	
+
 	<scm>
-        <connection>scm:git:https://github.com/aehrc/fhir-tx-transforms.git</connection>
+		<connection>scm:git:https://github.com/aehrc/fhir-tx-transforms.git</connection>
 		<developerConnection>scm:git:https://github.com/aehrc/fhir-tx-transforms.git</developerConnection>
-        <url>https://github.com/aehrc/fhir-tx-transforms.git</url>
+		<url>https://github.com/aehrc/fhir-tx-transforms.git</url>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -88,6 +89,33 @@
 			<groupId>ca.uhn.hapi.fhir</groupId>
 			<artifactId>hapi-fhir-structures-r4</artifactId>
 			<version>${hapi.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.11.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-multipart</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+
+	
+
+		<dependency>
+			<groupId>javax.activation</groupId>
+			<artifactId>activation</artifactId>
+			<version>1.1.1</version>
 		</dependency>
 
 

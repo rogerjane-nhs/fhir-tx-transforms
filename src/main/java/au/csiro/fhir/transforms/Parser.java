@@ -19,6 +19,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import au.csiro.fhir.transforms.helper.FeedClient;
 import au.csiro.fhir.transforms.helper.Utility;
 import au.csiro.fhir.transforms.parsers.CTV2Parser;
 import au.csiro.fhir.transforms.parsers.CTV3Parser;
@@ -34,7 +35,9 @@ public class Parser {
 	Properties props = new Properties();
 	String outFolder = null;
 	String txServer = null;
+	String feedServer = null;
 	boolean updateServer = false;
+	FeedClient feedClient= null;
 
 	private void loadPropoerties(String configFileName) throws IOException {
 
@@ -52,23 +55,41 @@ public class Parser {
 		}
 		updateServer = Boolean.valueOf(props.getProperty("server.update"));
 		System.out.printf("FHIR terminology server update is %s \n", updateServer);
+		
+		feedServer = props.getProperty("feed.server.url");
+		if (feedServer != null) {
+			feedClient = new FeedClient();
+			System.out.printf("Atomio feed server URL is %s \n", feedServer);
+		}
 	}
 
 	private void parseCTV2() throws IOException, ParseException {
-		
-		String termFile = props.getProperty("ctv2.termFile");
-		
+		String termFile = props.getProperty("ctv2.termFile");	
 		CTV2Parser parser = new CTV2Parser();
-		parser.processCodeSystemWithUpdate( termFile, "20160401", outFolder, updateServer ? txServer : null);
+		String domain = "";
+		if(termFile.contains("UNIFIED")) {
+			domain = "UNIFIED";
+		}
+		else if(termFile.contains("UNISCOT")) {
+			domain = "UNISCOT";
+		}
+		parser.processCodeSystemWithUpdate( termFile, "20160401", outFolder, txServer, feedClient,  domain);
 	}
 
 	
-	private void parseCTV3() throws IOException {
+	private void parseCTV3() throws IOException, ParseException {
 		CTV3Parser parser = new CTV3Parser();
+		Set<String> versions = new HashSet<String>();
 		for (String s : getPropertiesWithStartString("ctv3.version")) {
 			String version = s.split("\\.")[2];
-			parserSingleVersionCTV3(s, version, parser);
+			versions.add(version);
 		}
+		for (String v : versions) {
+			String historyFile = props.getProperty("ctv3.version." + v + ".historyFile");
+			String folder = props.getProperty("ctv3.version." + v + ".folder");
+			parserSingleVersionCTV3(folder,historyFile, v, parser);
+		}
+	
 	}
 
 	private void parseNICIP() throws IOException {
@@ -79,12 +100,13 @@ public class Parser {
 		}
 	}
 
-	private void parseICD() throws IOException {
+	private void parseICD() throws IOException, ParseException {
 		ICDParser parser = new ICDParser();
 		for (String s : getPropertiesWithStartString("icd10uk.version")) {
 			String version = s.split("\\.")[2];
+			version = version.replaceAll("/", ".");
 			String codeFile = props.getProperty(s);
-			parser.processCodeSystemWithUpdate(codeFile, version, outFolder,  updateServer ? txServer : null);
+			parser.processCodeSystemWithUpdate(codeFile, version, outFolder,  txServer,feedClient);
 		}
 
 	}
@@ -115,28 +137,27 @@ public class Parser {
 
 	private void parseSingleOPCS(String codeFile, String validFile, String version, String outFolder, OPCSParser parser)
 			throws IOException {
-		parser.processCodeSystemWithUpdate(codeFile, validFile, version, outFolder, updateServer ? txServer : null);
+		parser.processCodeSystemWithUpdate(codeFile, validFile, version, outFolder, txServer,feedClient);
 	}
 
 	private void parseSingleODS(String zipFile, String version, String outFolder, ODSParser parser)
 			throws IOException, SAXException, ParserConfigurationException {
 		if (zipFile != null) {
-			parser.processCodeSystemWithUpdate(zipFile, version, outFolder, updateServer ? txServer : null);
+			parser.processCodeSystemWithUpdate(zipFile, version, outFolder, txServer, feedClient);
 		}
 
 	}
 
-	private void parserSingleVersionCTV3(String propName, String version, CTV3Parser parser) throws IOException {
-		String packageFolder = props.getProperty(propName);
-		if (packageFolder != null) {
-			parser.processCodeSystemWithUpdate(packageFolder, version, outFolder, updateServer ? txServer : null);
+	private void parserSingleVersionCTV3(String folder , String historyFile, String version, CTV3Parser parser) throws IOException, ParseException {
+		if (folder != null) {
+			parser.processCodeSystemWithUpdate(folder, historyFile, version, outFolder, txServer,feedClient);
 		}
 	}
 
 	private void parserSingleVersionNICIP(String propName, String version, NICIPParser parser) throws IOException {
 		String packageFolder = props.getProperty(propName);
 		if (packageFolder != null) {
-			parser.processResourceWithUpdate(packageFolder, version, outFolder, updateServer ? txServer : null);
+			parser.processResourceWithUpdate(packageFolder, version, outFolder, txServer,feedClient);
 		}
 	}
 
@@ -155,9 +176,6 @@ public class Parser {
 			parseCTV3();
 		}
 		if (Boolean.valueOf(props.getProperty("process.ctv2"))) {
-			parseCTV2();
-		}
-		if (Boolean.valueOf(props.getProperty("process.ctv2term"))) {
 			parseCTV2();
 		}
 		if (Boolean.valueOf(props.getProperty("process.ods"))) {
