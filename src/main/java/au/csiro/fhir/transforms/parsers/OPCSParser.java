@@ -109,7 +109,7 @@ public class OPCSParser {
 		CodeSystem codeSystem = new CodeSystem();
 		
 		DateTimeType dt = new DateTimeType();
-		dt.setValueAsString(version.equals("4.8")?"2016-11-01":(version.equals("4.9")?"2019-11-01":null));
+		dt.setValueAsString(version.equals("4.8")?"2017-04-01":(version.equals("4.9")?"2020-04-01":null));
 		
 		codeSystem.setId(title.replaceAll("\\s", "-") + "-" + version);
 		codeSystem.setName(title.replaceAll("\\s", "_"))
